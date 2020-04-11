@@ -11,6 +11,8 @@ package ti.googlesignin;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+// import com.google.android.gms.common.api.Status;
+import androidx.annotation.NonNull;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -23,7 +25,7 @@ import com.google.android.gms.common.api.ApiException;
 // import com.google.android.gms.common.api.OptionalPendingResult;
 // import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
-// import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import java.util.ArrayList;
 import org.appcelerator.kroll.KrollDict;
@@ -43,26 +45,6 @@ public class GooglesigninModule extends KrollModule
 	public static final String LCAT = "TiGoogleSignIn";
 	private static int RC_SIGN_IN = 34;
 	private boolean loggedIn = false;
-
-	// @Kroll.constant
-	// @SuppressWarnings("unused")
-	// public static final int SIGN_IN_REQUIRED =
-	// GoogleSignInStatusCodes.SIGN_IN_CANCELLED;
-	//
-	// @Kroll.constant
-	// @SuppressWarnings("unused")
-	// public static final int NETWORK_ERROR =
-	// GoogleSignInStatusCodes.SIGN_IN_FAILED;
-	//
-	// @Kroll.constant
-	// @SuppressWarnings("unused")
-	// public static final int INVALID_ACCOUNT =
-	// GoogleSignInStatusCodes.INVALID_ACCOUNT;
-	//
-	// @Kroll.constant
-	// @SuppressWarnings("unused")
-	// public static final int INTERNAL_ERROR =
-	// GoogleSignInStatusCodes.INTERNAL_ERROR;
 
 	public GooglesigninModule()
 	{
@@ -169,27 +151,25 @@ public class GooglesigninModule extends KrollModule
 	@Kroll.method
 	private void signOut()
 	{
-		// if (googleApiClient != null) {
-		// 	if (googleApiClient.isConnected()) {
-		// 		Auth.GoogleSignInApi.signOut(googleApiClient)
-		// 				.setResultCallback(new ResultCallback<Status>()
-		// {
-		// 					@Override
-		// 					public void onResult(Status status) {
-		// 						KrollDict kd = new KrollDict();
-		// 						kd.put("status",
-		// status.getStatusMessage());
-		//
-		// 						fireEvent("disconnect", kd);
-		// 						loggedIn = false;
-		// 					}
-		// 				});
-		// 	} else {
-		// 		Log.w(LCAT, "googleApiClient not connected yet");
-		// 	}
-		// } else {
-		// 	Log.e(LCAT, "googleApiClient doesnt exist");
-		// }
+		mGoogleSignInClient.signOut().addOnCompleteListener(
+			TiApplication.getInstance().getCurrentActivity(), new OnCompleteListener<Void>() {
+				@Override
+				public void onComplete(@NonNull Task<Void> task)
+				{
+
+					KrollDict kd = new KrollDict();
+					if (task.isSuccessful()) {
+						kd.put("success", true);
+						kd.put("status", task.getResult());
+						fireEvent("disconnect", kd);
+						loggedIn = false;
+					} else {
+						kd.put("success", false);
+						fireEvent("disconnect", kd);
+						Log.w(LCAT, "googleApiClient not connected yet");
+					}
+				}
+			});
 	}
 
 	private final class SignInResultHandler implements TiActivityResultHandler
@@ -204,20 +184,8 @@ public class GooglesigninModule extends KrollModule
 			Log.d(LCAT, "onResult: " + requestCode);
 			if (requestCode == RC_SIGN_IN) {
 				Log.d(LCAT, "processing sign-in with resultCode: " + resultCode);
-				// GoogleSignInResult result =
-				// Auth.GoogleSignInApi.getSignInResultFromIntent(data);
 				Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
 				handleSignInResult(task);
-
-				//
-				//
-				// if (result.isSuccess()) {
-				//     Log.d(LCAT, "Login Success");
-				//
-				//
-				// } else {
-				//
-				// }
 			}
 		}
 
@@ -230,8 +198,6 @@ public class GooglesigninModule extends KrollModule
 				KrollDict auth = new KrollDict();
 
 				GoogleSignInAccount googleSignInAccount = completedTask.getResult(ApiException.class);
-
-				// GoogleSignInAccount googleSignInAccount = result.getSignInAccount();
 
 				ArrayList<String> scopes = new ArrayList<String>();
 				loggedIn = true;
