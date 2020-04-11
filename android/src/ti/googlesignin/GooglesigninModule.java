@@ -8,6 +8,24 @@
  */
 package ti.googlesignin;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+// import com.google.android.gms.common.ConnectionResult;
+// import com.google.android.gms.common.api.OptionalPendingResult;
+// import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Scope;
+// import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.Task;
+import java.util.ArrayList;
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
@@ -17,281 +35,294 @@ import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.util.TiActivityResultHandler;
 import org.appcelerator.titanium.util.TiActivitySupport;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.os.Bundle;
-
-import com.google.android.gms.auth.api.Auth;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.common.api.OptionalPendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.common.api.Status;
-
-import java.util.ArrayList;
-
 @Kroll.module(name = "Googlesignin", id = "ti.googlesignin")
-public class GooglesigninModule extends KrollModule implements ConnectionCallbacks, OnConnectionFailedListener {
-	GoogleApiClient googleApiClient;
+public class GooglesigninModule extends KrollModule
+{
+	GoogleSignInClient mGoogleSignInClient;
 
 	public static final String LCAT = "TiGoogleSignIn";
 	private static int RC_SIGN_IN = 34;
 	private boolean loggedIn = false;
 
-	@Kroll.constant
-    @SuppressWarnings("unused")
-	public static final int SIGN_IN_REQUIRED = GoogleSignInStatusCodes.SIGN_IN_CANCELLED;
+	// @Kroll.constant
+	// @SuppressWarnings("unused")
+	// public static final int SIGN_IN_REQUIRED =
+	// GoogleSignInStatusCodes.SIGN_IN_CANCELLED;
+	//
+	// @Kroll.constant
+	// @SuppressWarnings("unused")
+	// public static final int NETWORK_ERROR =
+	// GoogleSignInStatusCodes.SIGN_IN_FAILED;
+	//
+	// @Kroll.constant
+	// @SuppressWarnings("unused")
+	// public static final int INVALID_ACCOUNT =
+	// GoogleSignInStatusCodes.INVALID_ACCOUNT;
+	//
+	// @Kroll.constant
+	// @SuppressWarnings("unused")
+	// public static final int INTERNAL_ERROR =
+	// GoogleSignInStatusCodes.INTERNAL_ERROR;
 
-	@Kroll.constant
-    @SuppressWarnings("unused")
-	public static final int NETWORK_ERROR = GoogleSignInStatusCodes.SIGN_IN_FAILED;
-
-	@Kroll.constant
-    @SuppressWarnings("unused")
-	public static final int INVALID_ACCOUNT = GoogleSignInStatusCodes.INVALID_ACCOUNT;
-
-	@Kroll.constant
-    @SuppressWarnings("unused")
-	public static final int INTERNAL_ERROR = GoogleSignInStatusCodes.INTERNAL_ERROR;
-
-	public GooglesigninModule() {
+	public GooglesigninModule()
+	{
 		super();
 	}
 
 	@Override
-	public void onStart(Activity activity) {
+	public void onStart(Activity activity)
+	{
 		super.onStart(activity);
 
-		if (googleApiClient != null) {
-			googleApiClient.connect();
+		GoogleSignInAccount account =
+			GoogleSignIn.getLastSignedInAccount(TiApplication.getInstance().getApplicationContext());
+		if (account != null) {
+			loggedIn = true;
 		}
+		// updateUI(account);
 
-		OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(googleApiClient);
-
-		if (opr.isDone()) {
-			// If the user's cached credentials are valid, the OptionalPendingResult will be "done"
-			// and the GoogleSignInResult will be available instantly.
-			Log.d(LCAT, "Got cached sign-in");
-			GoogleSignInResult result = opr.get();
-			loggedIn = result.getStatus().isSuccess();
-		} else {
-			Log.d(LCAT, "No cached sign-in");
-
-			// If the user has not previously signed in on this device or the sign-in has expired,
-			// this asynchronous branch will attempt to sign in the user silently.  Cross-device
-			// single sign-on will occur in this branch.
-			opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
-				@Override
-				public void onResult(GoogleSignInResult googleSignInResult) {
-					Log.d(LCAT, "Silent sign-in done");
-					loggedIn = googleSignInResult.getStatus().isSuccess();
-				}
-			});
-		}
+		// if (googleApiClient != null) {
+		// 	googleApiClient.connect();
+		// }
+		//
+		// OptionalPendingResult<GoogleSignInResult> opr =
+		// Auth.GoogleSignInApi.silentSignIn(googleApiClient);
+		//
+		// if (opr.isDone()) {
+		// 	// If the user's cached credentials are valid, the OptionalPendingResult
+		// will be "done"
+		// 	// and the GoogleSignInResult will be available instantly.
+		// 	Log.d(LCAT, "Got cached sign-in");
+		// 	GoogleSignInResult result = opr.get();
+		// 	loggedIn = result.getStatus().isSuccess();
+		// } else {
+		// 	Log.d(LCAT, "No cached sign-in");
+		//
+		// 	// If the user has not previously signed in on this device or the
+		// sign-in has expired,
+		// 	// this asynchronous branch will attempt to sign in the user silently.
+		// Cross-device
+		// 	// single sign-on will occur in this branch.
+		// 	opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
+		// 		@Override
+		// 		public void onResult(GoogleSignInResult googleSignInResult) {
+		// 			Log.d(LCAT, "Silent sign-in done");
+		// 			loggedIn = googleSignInResult.getStatus().isSuccess();
+		// 		}
+		// 	});
+		// }
 	}
 
 	@Kroll.method
-	protected synchronized void initialize(KrollDict opts) {
-        String serverClientId;
+	protected synchronized void initialize(KrollDict opts)
+	{
+		String serverClientId;
 
-        if (opts.containsKeyAndNotNull("clientID")) {
+		if (opts.containsKeyAndNotNull("clientID")) {
 			serverClientId = opts.getString("clientID");
 		} else {
 			Log.e(LCAT, "No clientID found!");
 			return;
 		}
 
-		GoogleSignInOptions gso = new GoogleSignInOptions.Builder(
-				GoogleSignInOptions.DEFAULT_SIGN_IN)
-				.requestIdToken(serverClientId).requestProfile().requestEmail()
-				.build();
+		GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+									  .requestIdToken(serverClientId)
+									  .requestEmail()
+									  .build();
 
-		googleApiClient = new GoogleApiClient.Builder(TiApplication.getInstance().getApplicationContext())
-				.addApi(Auth.GOOGLE_SIGN_IN_API, gso)
-				.addConnectionCallbacks(this)
-				.addOnConnectionFailedListener(this).build();
-		googleApiClient.connect();
+		mGoogleSignInClient = GoogleSignIn.getClient(TiApplication.getInstance().getApplicationContext(), gso);
+
+		// googleApiClient = new
+		// GoogleApiClient.Builder(TiApplication.getInstance().getApplicationContext())
+		// 		.addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+		// 		.addConnectionCallbacks(this)
+		// 		.addOnConnectionFailedListener(this).build();
+		// googleApiClient.connect();
 	}
 
 	@Kroll.getProperty
-	protected boolean getLoggedIn() {
+	protected boolean getLoggedIn()
+	{
 		return loggedIn;
 	}
 
 	@Kroll.method
-	protected synchronized void signIn() {
-		Log.d(LCAT, "signIn with " + googleApiClient.toString());
-		// Building of intent
-		final Intent signInIntent = Auth.GoogleSignInApi
-				.getSignInIntent(googleApiClient);
+	private void signIn()
+	{
+		Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+
 		// building new activity with result handler
-		final TiActivitySupport activitySupport = (TiActivitySupport) TiApplication
-				.getInstance().getCurrentActivity();
+		final TiActivitySupport activitySupport = (TiActivitySupport) TiApplication.getInstance().getCurrentActivity();
 		if (TiApplication.isUIThread()) {
-			activitySupport.launchActivityForResult(signInIntent, RC_SIGN_IN,
-					new SignInResultHandler());
+			activitySupport.launchActivityForResult(signInIntent, RC_SIGN_IN, new SignInResultHandler());
 		} else {
 			TiMessenger.postOnMain(new Runnable() {
 				@Override
-				public void run() {
-					activitySupport.launchActivityForResult(signInIntent,
-							RC_SIGN_IN, new SignInResultHandler());
+				public void run()
+				{
+					activitySupport.launchActivityForResult(signInIntent, RC_SIGN_IN, new SignInResultHandler());
 				}
 			});
 		}
 	}
 
 	@Kroll.method
-	protected synchronized void signOut() {
-		if (googleApiClient != null) {
-			if (googleApiClient.isConnected()) {
-				Auth.GoogleSignInApi.signOut(googleApiClient)
-						.setResultCallback(new ResultCallback<Status>() {
-							@Override
-							public void onResult(Status status) {
-								KrollDict kd = new KrollDict();
-								kd.put("status", status.getStatusMessage());
-
-								fireEvent("disconnect", kd);
-								loggedIn = false;
-							}
-						});
-			} else {
-				Log.w(LCAT, "googleApiClient not connected yet");
-			}
-		} else {
-			Log.e(LCAT, "googleApiClient doesnt exist");
-		}
+	private void signOut()
+	{
+		// if (googleApiClient != null) {
+		// 	if (googleApiClient.isConnected()) {
+		// 		Auth.GoogleSignInApi.signOut(googleApiClient)
+		// 				.setResultCallback(new ResultCallback<Status>()
+		// {
+		// 					@Override
+		// 					public void onResult(Status status) {
+		// 						KrollDict kd = new KrollDict();
+		// 						kd.put("status",
+		// status.getStatusMessage());
+		//
+		// 						fireEvent("disconnect", kd);
+		// 						loggedIn = false;
+		// 					}
+		// 				});
+		// 	} else {
+		// 		Log.w(LCAT, "googleApiClient not connected yet");
+		// 	}
+		// } else {
+		// 	Log.e(LCAT, "googleApiClient doesnt exist");
+		// }
 	}
 
-	private final class SignInResultHandler implements TiActivityResultHandler {
-		public void onError(Activity arg0, int arg1, Exception e) {
-		    Log.e(LCAT, e.getMessage());
+	private final class SignInResultHandler implements TiActivityResultHandler
+	{
+		public void onError(Activity arg0, int arg1, Exception e)
+		{
+			Log.e(LCAT, e.getMessage());
 		}
 
-		public void onResult(Activity dummy, int requestCode, int resultCode, Intent data) {
+		public void onResult(Activity dummy, int requestCode, int resultCode, Intent data)
+		{
 			Log.d(LCAT, "onResult: " + requestCode);
 			if (requestCode == RC_SIGN_IN) {
-			    Log.d(LCAT, "processing sign-in with resultCode: " + resultCode);
-				GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+				Log.d(LCAT, "processing sign-in with resultCode: " + resultCode);
+				// GoogleSignInResult result =
+				// Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+				Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+				handleSignInResult(task);
 
-                KrollDict event = new KrollDict();
-                KrollDict user = new KrollDict();
-                KrollDict profile = new KrollDict();
-                KrollDict auth = new KrollDict();
+				//
+				//
+				// if (result.isSuccess()) {
+				//     Log.d(LCAT, "Login Success");
+				//
+				//
+				// } else {
+				//
+				// }
+			}
+		}
 
-				if (result.isSuccess()) {
-                    Log.d(LCAT, "Login Success");
+		private void handleSignInResult(Task<GoogleSignInAccount> completedTask)
+		{
+			try {
+				KrollDict event = new KrollDict();
+				KrollDict user = new KrollDict();
+				KrollDict profile = new KrollDict();
+				KrollDict auth = new KrollDict();
 
-                    GoogleSignInAccount googleSignInAccount = result.getSignInAccount();
+				GoogleSignInAccount googleSignInAccount = completedTask.getResult(ApiException.class);
 
-					ArrayList<String> scopes = new ArrayList<String>();
-					loggedIn = true;
+				// GoogleSignInAccount googleSignInAccount = result.getSignInAccount();
 
-					for (Scope scope : googleSignInAccount.getGrantedScopes()) {
-						scopes.add(scope.toString());
-					}
+				ArrayList<String> scopes = new ArrayList<String>();
+				loggedIn = true;
 
-					profile.put("familyName", googleSignInAccount.getFamilyName());
-                    profile.put("givenName", googleSignInAccount.getGivenName());
-                    profile.put("accountName", googleSignInAccount.getAccount().name);
-                    profile.put("name", googleSignInAccount.getDisplayName());
-                    profile.put("displayName", googleSignInAccount.getDisplayName());
-                    profile.put("email", googleSignInAccount.getEmail());
-                    profile.put("image", googleSignInAccount.getPhotoUrl().toString());
-					profile.put("accountType", googleSignInAccount.getAccount().type);
-					profile.put("accountString", googleSignInAccount.getAccount().toString());
-
-                    auth.put("idToken", googleSignInAccount.getIdToken());
-
-                    user.put("id", googleSignInAccount.getId());
-                    user.put("scopes", scopes.toArray(new String[scopes.size()]));
-                    user.put("serverAuthCode", googleSignInAccount.getServerAuthCode());
-					user.put("profile", profile);
-                    user.put("authentication", auth);
-
-					event.put("user", user);
-					event.put("cancelled", false);
-					event.put("success", true);
-
-					fireEvent("login", event);
-				} else {
-					if (result.getStatus().getStatusCode() == -5) {
-						event.put("cancelled", true);
-						event.put("success", false);
-
-						fireEvent("login", event);
-						return;
-					}
-					event.put("code", result.getStatus().getStatusCode());
-					event.put("message", result.getStatus().getStatusMessage());
-					event.put("success", false);
-					loggedIn = false;
-
-					fireEvent("error", event);
+				for (Scope scope : googleSignInAccount.getGrantedScopes()) {
+					scopes.add(scope.toString());
 				}
+
+				profile.put("familyName", googleSignInAccount.getFamilyName());
+				profile.put("givenName", googleSignInAccount.getGivenName());
+				profile.put("accountName", googleSignInAccount.getAccount().name);
+				profile.put("name", googleSignInAccount.getDisplayName());
+				profile.put("displayName", googleSignInAccount.getDisplayName());
+				profile.put("email", googleSignInAccount.getEmail());
+				profile.put("image", googleSignInAccount.getPhotoUrl().toString());
+				profile.put("accountType", googleSignInAccount.getAccount().type);
+				profile.put("accountString", googleSignInAccount.getAccount().toString());
+
+				auth.put("idToken", googleSignInAccount.getIdToken());
+
+				user.put("id", googleSignInAccount.getId());
+				user.put("scopes", scopes.toArray(new String[scopes.size()]));
+				user.put("serverAuthCode", googleSignInAccount.getServerAuthCode());
+				user.put("profile", profile);
+				user.put("authentication", auth);
+
+				event.put("user", user);
+				event.put("cancelled", false);
+				event.put("success", true);
+
+				fireEvent("login", event);
+			} catch (ApiException e) {
+				// The ApiException status code indicates the detailed failure reason.
+				// Please refer to the GoogleSignInStatusCodes class reference for more
+				// information.
+				Log.w(LCAT, "signInResult:failed code=" + e.getStatusCode());
 			}
 		}
 	}
-
-	@Override
-	public void onConnectionFailed(ConnectionResult result) {
-		Log.d(LCAT, "onConnectionFailed");
-		if (hasListeners("error")) {
-			KrollDict kd = new KrollDict();
-			kd.put("error", result.getErrorMessage());
-			kd.put("code", result.getErrorCode());
-
-			fireEvent("error", kd);
-		}
-	}
+	// @Override
+	// public void onConnectionFailed(ConnectionResult result) {
+	// 	Log.d(LCAT, "onConnectionFailed");
+	// 	if (hasListeners("error")) {
+	// 		KrollDict kd = new KrollDict();
+	// 		kd.put("error", result.getErrorMessage());
+	// 		kd.put("code", result.getErrorCode());
+	//
+	// 		fireEvent("error", kd);
+	// 	}
+	// }
 
 	/*
-	 * After calling connect(), this method will be invoked asynchronously when
-	 * the connect request has successfully completed. After this callback, the
-	 * application can make requests on other methods provided by the client and
-	 * expect that no user intervention is required to call methods that use
-	 * account and scopes provided to the client constructor.
-	 * 
-	 * Note that the contents of the connectionHint Bundle are defined by the
-	 * specific services. Please see the documentation of the specific
-	 * implementation of GoogleApiClient you are using for more information.
-	 */
-	@Override
-	public void onConnected(Bundle bundle) {
+   * After calling connect(), this method will be invoked asynchronously when
+   * the connect request has successfully completed. After this callback, the
+   * application can make requests on other methods provided by the client and
+   * expect that no user intervention is required to call methods that use
+   * account and scopes provided to the client constructor.
+   *
+   * Note that the contents of the connectionHint Bundle are defined by the
+   * specific services. Please see the documentation of the specific
+   * implementation of GoogleApiClient you are using for more information.
+   */
+	// @Override
+	public void onConnected(Bundle bundle)
+	{
 		Log.d(LCAT, "onConnected");
 
 		KrollDict kd = new KrollDict();
 
-		// This may be set if play-services provide it. If not available, it's fine as well
+		// This may be set if play-services provide it. If not available, it's fine
+		// as well
 		if (bundle != null) {
 			kd.put("result", bundle.toString());
 		}
 
-	    fireEvent("connect", kd);
+		fireEvent("connect", kd);
 	}
 
 	/*
-	 * Called when the client is temporarily in a disconnected state. This can
-	 * happen if there is a problem with the remote service (e.g. a crash or
-	 * resource problem causes it to be killed by the system). When called, all
-	 * requests have been canceled and no outstanding listeners will be
-	 * executed. GoogleApiClient will automatically attempt to restore the
-	 * connection. Applications should disable UI components that require the
-	 * service, and wait for a call to onConnected(Bundle) to re-enable
-	 */
-	@Override
-	public void onConnectionSuspended(int result) {
+   * Called when the client is temporarily in a disconnected state. This can
+   * happen if there is a problem with the remote service (e.g. a crash or
+   * resource problem causes it to be killed by the system). When called, all
+   * requests have been canceled and no outstanding listeners will be
+   * executed. GoogleApiClient will automatically attempt to restore the
+   * connection. Applications should disable UI components that require the
+   * service, and wait for a call to onConnected(Bundle) to re-enable
+   */
+	// @Override
+	public void onConnectionSuspended(int result)
+	{
 		KrollDict kd = new KrollDict();
 		Log.d(LCAT, "onConnectionSuspended");
 	}
 }
-
